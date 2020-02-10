@@ -23,6 +23,9 @@
  */
 package com.artipie.files;
 
+import com.artipie.asto.Storage;
+import com.artipie.asto.rx.RxStorage;
+import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import java.nio.ByteBuffer;
@@ -36,11 +39,24 @@ import java.util.concurrent.Flow;
  */
 public final class FilesSlice implements Slice {
 
+    /**
+     * The storage.
+     */
+    private final RxStorage storage;
+
+    /**
+     * Ctor.
+     * @param storage The storage.
+     */
+    public FilesSlice(final Storage storage) {
+        this.storage = new RxStorageWrapper(storage);
+    }
+
     @Override
     public Response response(
         final String line,
         final Iterable<Map.Entry<String, String>> headers,
         final Flow.Publisher<ByteBuffer> publisher) {
-        return null;
+        return Response.EMPTY;
     }
 }
