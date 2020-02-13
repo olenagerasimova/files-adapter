@@ -23,12 +23,20 @@
  */
 package com.artipie.files;
 
+import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.rx.RxStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
+import com.artipie.http.rq.RequestLineFrom;
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import org.reactivestreams.FlowAdapters;
+import org.reactivestreams.Publisher;
+
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Flow;
 
@@ -57,6 +65,44 @@ public final class FilesSlice implements Slice {
         final String line,
         final Iterable<Map.Entry<String, String>> headers,
         final Flow.Publisher<ByteBuffer> publisher) {
-        return Response.EMPTY;
+        final RequestLineFrom requestLineFrom = new RequestLineFrom(line);
+        final Key key = new Key.From(requestLineFrom.uri().toString().substring(1).split("/"));
+        final Response response;
+        final String method = requestLineFrom.method();
+        final Publisher<ByteBuffer> reactive = FlowAdapters.toPublisher(publisher);
+        if (method.equals("GET")) {
+            response = connection -> connection.accept(
+                200,
+                Collections.emptySet(),
+                FlowAdapters.toFlowPublisher(
+                    Flowable.fromPublisher(reactive).flatMapCompletable(byteBuffer -> Completable.complete()
+                    ).andThen(storage.value(key).flatMapPublisher(flow -> flow))
+                )
+            );
+        } else if (method.equals("POST") || method.equals("PUT")) {
+            response = connection -> connection.accept(
+                200,
+                Collections.emptySet(),
+                FlowAdapters.toFlowPublisher(
+                    storage.save(
+                        key,
+                        Flowable.fromPublisher(reactive)
+                    ).andThen(Flowable.empty())
+                )
+            );
+        } else {
+            response = connection -> connection.accept(
+                404,
+                Collections.emptySet(),
+                FlowAdapters.toFlowPublisher(
+                    Flowable.fromArray(
+                        ByteBuffer.wrap(
+                            "FILE NOT FOUND".getBytes()
+                        )
+                    )
+                )
+            );
+        }
+        return response;
     }
 }
