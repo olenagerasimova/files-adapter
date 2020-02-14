@@ -28,20 +28,16 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.vertx.VertxSliceServer;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Single;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.ext.web.client.HttpResponse;
 import io.vertx.reactivex.ext.web.client.WebClient;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for files adapter.
@@ -49,11 +45,20 @@ import java.nio.file.Path;
  */
 public class FileSliceTest {
 
+    /**
+     * The host to send requests to.
+     */
+    private static final String HOST = "localhost";
+
+    /**
+     * File put works.
+     * @throws IOException If fails.
+     */
     @Test
     void putWorks() throws IOException {
         final String hello = "Hello world!!!";
         final Path temp = Files.createTempDirectory("temp");
-        final int port = rndPort();
+        final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
         final Storage storage = new FileStorage(temp);
         final VertxSliceServer server = new VertxSliceServer(
@@ -62,8 +67,8 @@ public class FileSliceTest {
             port
         );
         server.start();
-        final WebClient webClient = WebClient.create(vertx);
-        webClient.put(port, "localhost", "/hello.txt")
+        final WebClient web = WebClient.create(vertx);
+        web.put(port, FileSliceTest.HOST, "/hello.txt")
             .rxSendBuffer(Buffer.buffer(hello.getBytes()))
             .blockingGet();
         MatcherAssert.assertThat(
@@ -76,12 +81,16 @@ public class FileSliceTest {
         vertx.close();
     }
 
+    /**
+     * Get file works.
+     *
+     * @throws IOException If fails.
+     */
     @Test
     void getWorks() throws IOException {
-        final String hello = "Hello world!!!";
-        final Path temp = Files.createTempDirectory("temp");
-        final int port = rndPort();
-        System.out.println("port " + port);
+        final String hello = "Hello world!!";
+        final Path temp = Files.createTempDirectory("temp-dir");
+        final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
         final Storage storage = new FileStorage(temp);
         final VertxSliceServer server = new VertxSliceServer(
@@ -90,21 +99,21 @@ public class FileSliceTest {
             port
         );
         server.start();
-        final WebClient webClient = WebClient.create(vertx);
-        new BlockingStorage(storage).save(new Key.From("hello.txt"), hello.getBytes());
+        final WebClient web = WebClient.create(vertx);
+        final String hellot = "hello1.txt";
+        new BlockingStorage(storage).save(new Key.From(hellot), hello.getBytes());
         MatcherAssert.assertThat(
             new String(
                 Files.readAllBytes(
-                    Path.of(temp.toString(), "hello.txt")
+                    Path.of(temp.toString(), hellot)
                 )
             ), Matchers.equalTo(hello)
         );
-        final HttpResponse<Buffer> response = webClient.get(port, "localhost", "/hello.txt")
-            .rxSend()
-            .blockingGet();
         MatcherAssert.assertThat(
             new String(
-                response
+                web.get(port, FileSliceTest.HOST, "/hello1.txt")
+                    .rxSend()
+                    .blockingGet()
                     .bodyAsBuffer()
                     .getBytes()
             ),
@@ -113,8 +122,6 @@ public class FileSliceTest {
         server.stop();
         vertx.close();
     }
-
-
 
     /**
      * Find a random port.
