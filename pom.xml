@@ -80,11 +80,24 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>http</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>0.3</version>
     </dependency>
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
+      <version>0.13.0</version>
+    </dependency>
+    <!-- Test only dependencies -->
+    <dependency>
+      <groupId>com.artipie</groupId>
+      <artifactId>vertx-server</artifactId>
+      <version>0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-web-client</artifactId>
+      <version>${vertx.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
