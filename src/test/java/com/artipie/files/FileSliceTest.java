@@ -36,7 +36,7 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
+import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -75,7 +75,7 @@ public class FileSliceTest {
             new String(
                 new BlockingStorage(storage).value(new Key.From("hello.txt"))
             ),
-            Matchers.equalTo(hello)
+            new IsEqual<>(hello)
         );
         server.stop();
         vertx.close();
@@ -107,7 +107,7 @@ public class FileSliceTest {
                 Files.readAllBytes(
                     Path.of(temp.toString(), hellot)
                 )
-            ), Matchers.equalTo(hello)
+            ), new IsEqual<>(hello)
         );
         MatcherAssert.assertThat(
             new String(
@@ -117,7 +117,7 @@ public class FileSliceTest {
                     .bodyAsBuffer()
                     .getBytes()
             ),
-            Matchers.equalTo(hello)
+            new IsEqual<>(hello)
         );
         server.stop();
         vertx.close();
