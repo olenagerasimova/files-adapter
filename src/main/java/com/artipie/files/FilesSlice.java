@@ -30,10 +30,11 @@ import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rs.RsWithStatus;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import java.nio.ByteBuffer;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.Flow;
 import org.reactivestreams.FlowAdapters;
@@ -70,20 +71,23 @@ public final class FilesSlice implements Slice {
         final String method = rline.method();
         final Publisher<ByteBuffer> reactive = FlowAdapters.toPublisher(publisher);
         final int okay = 200;
+        final int zero = 0;
         if (method.equals("GET")) {
-            response = connection -> connection.accept(
-                okay,
-                Collections.emptySet(),
-                FlowAdapters.toFlowPublisher(
-                    Flowable.fromPublisher(reactive)
-                        .flatMapCompletable(byteBuffer -> Completable.complete())
-                        .andThen(this.storage.value(key).flatMapPublisher(flow -> flow))
-                )
-            );
+            response = connection -> {
+                connection.accept(
+                    okay,
+                    new HashSet<>(zero),
+                    FlowAdapters.toFlowPublisher(
+                        Flowable.fromPublisher(reactive)
+                            .flatMapCompletable(byteBuffer -> Completable.complete())
+                            .andThen(this.storage.value(key).flatMapPublisher(flow -> flow))
+                    )
+                );
+            };
         } else if (method.equals("POST") || method.equals("PUT")) {
             response = connection -> connection.accept(
                 okay,
-                Collections.emptySet(),
+                new HashSet<>(zero),
                 FlowAdapters.toFlowPublisher(
                     this.storage.save(
                         key,
@@ -92,20 +96,8 @@ public final class FilesSlice implements Slice {
                 )
             );
         } else {
-            response = connection -> {
-                final int nfound = 404;
-                connection.accept(
-                    nfound,
-                    Collections.emptySet(),
-                    FlowAdapters.toFlowPublisher(
-                        Flowable.fromArray(
-                            ByteBuffer.wrap(
-                                "FILE NOT FOUND".getBytes()
-                            )
-                        )
-                    )
-                );
-            };
+            final int nfound = 404;
+            response = new RsWithStatus(nfound);
         }
         return response;
     }
