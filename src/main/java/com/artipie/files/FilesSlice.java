@@ -23,6 +23,7 @@
  */
 package com.artipie.files;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.rx.RxStorage;
@@ -91,7 +92,7 @@ public final class FilesSlice implements Slice {
                 FlowAdapters.toFlowPublisher(
                     this.storage.save(
                         key,
-                        Flowable.fromPublisher(reactive)
+                        new Content.From(Flowable.fromPublisher(reactive))
                     ).andThen(Flowable.empty())
                 )
             );

@@ -60,7 +60,7 @@ public class FileSliceTest {
         final Path temp = Files.createTempDirectory("temp");
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
-        final Storage storage = new FileStorage(temp);
+        final Storage storage = new FileStorage(temp, vertx.fileSystem());
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new FilesSlice(storage),
@@ -82,6 +82,37 @@ public class FileSliceTest {
     }
 
     /**
+     * Put on complex name works correctly.
+     * @throws IOException if failed
+     */
+    @Test
+    void complexNamePutWorks() throws IOException {
+        final String hello = "Hello world!!!";
+        final Path temp = Files.createTempDirectory("temp");
+        final int port = this.rndPort();
+        final Vertx vertx = Vertx.vertx();
+        final Storage storage = new FileStorage(temp, vertx.fileSystem());
+        final VertxSliceServer server = new VertxSliceServer(
+            vertx,
+            new FilesSlice(storage),
+            port
+        );
+        server.start();
+        final WebClient web = WebClient.create(vertx);
+        web.put(port, FileSliceTest.HOST, "/hello/world.txt")
+            .rxSendBuffer(Buffer.buffer(hello.getBytes()))
+            .blockingGet();
+        MatcherAssert.assertThat(
+            new String(
+                new BlockingStorage(storage).value(new Key.From("hello/world.txt"))
+            ),
+            new IsEqual<>(hello)
+        );
+        server.stop();
+        vertx.close();
+    }
+
+    /**
      * Get file works.
      *
      * @throws IOException If fails.
@@ -92,7 +123,7 @@ public class FileSliceTest {
         final Path temp = Files.createTempDirectory("temp-dir");
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
-        final Storage storage = new FileStorage(temp);
+        final Storage storage = new FileStorage(temp, vertx.fileSystem());
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new FilesSlice(storage),
