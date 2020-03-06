@@ -114,6 +114,48 @@ public class FileSliceTest {
     }
 
     /**
+     * Get on complex file works.
+     *
+     * @param temp The temp dir.
+     * @throws IOException If fails.
+     */
+    @Test
+    void getComplexNameWorks(@TempDir final Path temp) throws IOException {
+        final String hello = "Hellooo world!!";
+        final int port = this.rndPort();
+        final Vertx vertx = Vertx.vertx();
+        final Storage storage = new FileStorage(temp, vertx.fileSystem());
+        final VertxSliceServer server = new VertxSliceServer(
+            vertx,
+            new FilesSlice(storage),
+            port
+        );
+        server.start();
+        final WebClient web = WebClient.create(vertx);
+        final String hellot = "hello/world1.txt";
+        new BlockingStorage(storage).save(new Key.From(hellot), hello.getBytes());
+        MatcherAssert.assertThat(
+            new String(
+                Files.readAllBytes(
+                    Path.of(temp.toString(), hellot)
+                )
+            ), new IsEqual<>(hello)
+        );
+        MatcherAssert.assertThat(
+            new String(
+                web.get(port, FileSliceTest.HOST, String.format("/%s", hellot))
+                    .rxSend()
+                    .blockingGet()
+                    .bodyAsBuffer()
+                    .getBytes()
+            ),
+            new IsEqual<>(hello)
+        );
+        server.stop();
+        vertx.close();
+    }
+
+    /**
      * Get file works.
      * @param temp The temp dir.
      * @throws IOException If fails.
