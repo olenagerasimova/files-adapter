@@ -38,12 +38,13 @@ import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Tests for files adapter.
  * @since 0.1
  */
-public class FileSliceTest {
+public class FileSliceITCase {
 
     /**
      * The host to send requests to.
@@ -52,15 +53,15 @@ public class FileSliceTest {
 
     /**
      * File put works.
+     * @param temp The temp dir.
      * @throws IOException If fails.
      */
     @Test
-    void putWorks() throws IOException {
+    void putWorks(@TempDir final Path temp) throws IOException {
         final String hello = "Hello world!!!";
-        final Path temp = Files.createTempDirectory("temp");
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
-        final Storage storage = new FileStorage(temp);
+        final Storage storage = new FileStorage(temp, vertx.fileSystem());
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new FilesSlice(storage),
@@ -68,7 +69,7 @@ public class FileSliceTest {
         );
         server.start();
         final WebClient web = WebClient.create(vertx);
-        web.put(port, FileSliceTest.HOST, "/hello.txt")
+        web.put(port, FileSliceITCase.HOST, "/hello.txt")
             .rxSendBuffer(Buffer.buffer(hello.getBytes()))
             .blockingGet();
         MatcherAssert.assertThat(
@@ -82,17 +83,89 @@ public class FileSliceTest {
     }
 
     /**
-     * Get file works.
+     * Put on complex name works correctly.
+     * @param temp The temp dir.
+     * @throws IOException if failed
+     */
+    @Test
+    void complexNamePutWorks(@TempDir final Path temp) throws IOException {
+        final String hello = "Hello world!!!!";
+        final int port = this.rndPort();
+        final Vertx vertx = Vertx.vertx();
+        final Storage storage = new FileStorage(temp, vertx.fileSystem());
+        final VertxSliceServer server = new VertxSliceServer(
+            vertx,
+            new FilesSlice(storage),
+            port
+        );
+        server.start();
+        final WebClient web = WebClient.create(vertx);
+        web.put(port, FileSliceITCase.HOST, "/hello/world.txt")
+            .rxSendBuffer(Buffer.buffer(hello.getBytes()))
+            .blockingGet();
+        MatcherAssert.assertThat(
+            new String(
+                new BlockingStorage(storage).value(new Key.From("hello/world.txt"))
+            ),
+            new IsEqual<>(hello)
+        );
+        server.stop();
+        vertx.close();
+    }
+
+    /**
+     * Get on complex file works.
      *
+     * @param temp The temp dir.
      * @throws IOException If fails.
      */
     @Test
-    void getWorks() throws IOException {
-        final String hello = "Hello world!!";
-        final Path temp = Files.createTempDirectory("temp-dir");
+    void getComplexNameWorks(@TempDir final Path temp) throws IOException {
+        final String hello = "Hellooo world!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
-        final Storage storage = new FileStorage(temp);
+        final Storage storage = new FileStorage(temp, vertx.fileSystem());
+        final VertxSliceServer server = new VertxSliceServer(
+            vertx,
+            new FilesSlice(storage),
+            port
+        );
+        server.start();
+        final WebClient web = WebClient.create(vertx);
+        final String hellot = "hello/world1.txt";
+        new BlockingStorage(storage).save(new Key.From(hellot), hello.getBytes());
+        MatcherAssert.assertThat(
+            new String(
+                Files.readAllBytes(
+                    Path.of(temp.toString(), hellot)
+                )
+            ), new IsEqual<>(hello)
+        );
+        MatcherAssert.assertThat(
+            new String(
+                web.get(port, FileSliceITCase.HOST, String.format("/%s", hellot))
+                    .rxSend()
+                    .blockingGet()
+                    .bodyAsBuffer()
+                    .getBytes()
+            ),
+            new IsEqual<>(hello)
+        );
+        server.stop();
+        vertx.close();
+    }
+
+    /**
+     * Get file works.
+     * @param temp The temp dir.
+     * @throws IOException If fails.
+     */
+    @Test
+    void getWorks(@TempDir final Path temp) throws IOException {
+        final String hello = "Hello world!!";
+        final int port = this.rndPort();
+        final Vertx vertx = Vertx.vertx();
+        final Storage storage = new FileStorage(temp, vertx.fileSystem());
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new FilesSlice(storage),
@@ -111,7 +184,7 @@ public class FileSliceTest {
         );
         MatcherAssert.assertThat(
             new String(
-                web.get(port, FileSliceTest.HOST, "/hello1.txt")
+                web.get(port, FileSliceITCase.HOST, "/hello1.txt")
                     .rxSend()
                     .blockingGet()
                     .bodyAsBuffer()
