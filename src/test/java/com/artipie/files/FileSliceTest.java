@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Tests for files adapter.
@@ -52,12 +53,12 @@ public class FileSliceTest {
 
     /**
      * File put works.
+     * @param temp The temp dir.
      * @throws IOException If fails.
      */
     @Test
-    void putWorks() throws IOException {
+    void putWorks(@TempDir final Path temp) throws IOException {
         final String hello = "Hello world!!!";
-        final Path temp = Files.createTempDirectory("temp");
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
         final Storage storage = new FileStorage(temp, vertx.fileSystem());
@@ -83,12 +84,12 @@ public class FileSliceTest {
 
     /**
      * Put on complex name works correctly.
+     * @param temp The temp dir.
      * @throws IOException if failed
      */
     @Test
-    void complexNamePutWorks() throws IOException {
+    void complexNamePutWorks(@TempDir final Path temp) throws IOException {
         final String hello = "Hello world!!!";
-        final Path temp = Files.createTempDirectory("temp");
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
         final Storage storage = new FileStorage(temp, vertx.fileSystem());
@@ -114,13 +115,12 @@ public class FileSliceTest {
 
     /**
      * Get file works.
-     *
+     * @param temp The temp dir.
      * @throws IOException If fails.
      */
     @Test
-    void getWorks() throws IOException {
+    void getWorks(@TempDir final Path temp) throws IOException {
         final String hello = "Hello world!!";
-        final Path temp = Files.createTempDirectory("temp-dir");
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
         final Storage storage = new FileStorage(temp, vertx.fileSystem());
