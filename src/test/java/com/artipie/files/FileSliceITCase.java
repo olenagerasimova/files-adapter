@@ -44,7 +44,7 @@ import org.junit.jupiter.api.io.TempDir;
  * Tests for files adapter.
  * @since 0.1
  */
-public class FileSliceTest {
+public class FileSliceITCase {
 
     /**
      * The host to send requests to.
@@ -69,7 +69,7 @@ public class FileSliceTest {
         );
         server.start();
         final WebClient web = WebClient.create(vertx);
-        web.put(port, FileSliceTest.HOST, "/hello.txt")
+        web.put(port, FileSliceITCase.HOST, "/hello.txt")
             .rxSendBuffer(Buffer.buffer(hello.getBytes()))
             .blockingGet();
         MatcherAssert.assertThat(
@@ -100,7 +100,7 @@ public class FileSliceTest {
         );
         server.start();
         final WebClient web = WebClient.create(vertx);
-        web.put(port, FileSliceTest.HOST, "/hello/world.txt")
+        web.put(port, FileSliceITCase.HOST, "/hello/world.txt")
             .rxSendBuffer(Buffer.buffer(hello.getBytes()))
             .blockingGet();
         MatcherAssert.assertThat(
@@ -143,7 +143,7 @@ public class FileSliceTest {
         );
         MatcherAssert.assertThat(
             new String(
-                web.get(port, FileSliceTest.HOST, String.format("/%s", hellot))
+                web.get(port, FileSliceITCase.HOST, String.format("/%s", hellot))
                     .rxSend()
                     .blockingGet()
                     .bodyAsBuffer()
@@ -184,7 +184,7 @@ public class FileSliceTest {
         );
         MatcherAssert.assertThat(
             new String(
-                web.get(port, FileSliceTest.HOST, "/hello1.txt")
+                web.get(port, FileSliceITCase.HOST, "/hello1.txt")
                     .rxSend()
                     .blockingGet()
                     .bodyAsBuffer()
