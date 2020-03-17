@@ -71,25 +71,30 @@ public final class FilesSlice implements Slice {
         final Response response;
         final RqMethod method = rline.method();
         final int zero = 0;
-        if (method.equals(RqMethod.GET)) {
-            response = connection -> connection.accept(
-                RsStatus.OK,
-                new HashSet<>(zero),
-                Flowable.fromPublisher(publisher)
-                    .flatMapCompletable(byteBuffer -> Completable.complete())
-                    .andThen(this.storage.value(key).flatMapPublisher(flow -> flow))
-            );
-        } else if (method.equals(RqMethod.POST) || method.equals(RqMethod.PUT)) {
-            response = connection -> connection.accept(
-                RsStatus.OK,
-                new HashSet<>(zero),
-                this.storage.save(
-                    key,
-                    new Content.From(publisher)
-                ).andThen(Flowable.empty())
-            );
-        } else {
-            response = new RsWithStatus(RsStatus.NOT_FOUND);
+        switch (method) {
+            case GET:
+                response = connection -> connection.accept(
+                    RsStatus.OK,
+                    new HashSet<>(zero),
+                    Flowable.fromPublisher(publisher)
+                        .flatMapCompletable(byteBuffer -> Completable.complete())
+                        .andThen(this.storage.value(key).flatMapPublisher(flow -> flow))
+                );
+                break;
+            case POST:
+            case PUT:
+                response = connection -> connection.accept(
+                    RsStatus.OK,
+                    new HashSet<>(zero),
+                    this.storage.save(
+                        key,
+                        new Content.From(publisher)
+                    ).andThen(Flowable.empty())
+                );
+                break;
+            default:
+                response = new RsWithStatus(RsStatus.NOT_FOUND);
+                break;
         }
         return response;
     }
