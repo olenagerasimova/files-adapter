@@ -31,14 +31,14 @@ import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rq.RqMethod;
+import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.Flow;
-import org.reactivestreams.FlowAdapters;
 import org.reactivestreams.Publisher;
 
 /**
@@ -65,40 +65,36 @@ public final class FilesSlice implements Slice {
     public Response response(
         final String line,
         final Iterable<Map.Entry<String, String>> headers,
-        final Flow.Publisher<ByteBuffer> publisher) {
+        final Publisher<ByteBuffer> publisher) {
         final RequestLineFrom rline = new RequestLineFrom(line);
         final Key key = new Key.From(rline.uri().toString().substring(1).split("/"));
         final Response response;
-        final String method = rline.method();
-        final Publisher<ByteBuffer> reactive = FlowAdapters.toPublisher(publisher);
-        final int okay = 200;
+        final RqMethod method = rline.method();
         final int zero = 0;
-        if (method.equals("GET")) {
-            response = connection -> {
-                connection.accept(
-                    okay,
+        switch (method) {
+            case GET:
+                response = connection -> connection.accept(
+                    RsStatus.OK,
                     new HashSet<>(zero),
-                    FlowAdapters.toFlowPublisher(
-                        Flowable.fromPublisher(reactive)
-                            .flatMapCompletable(byteBuffer -> Completable.complete())
-                            .andThen(this.storage.value(key).flatMapPublisher(flow -> flow))
-                    )
+                    Flowable.fromPublisher(publisher)
+                        .flatMapCompletable(byteBuffer -> Completable.complete())
+                        .andThen(this.storage.value(key).flatMapPublisher(flow -> flow))
                 );
-            };
-        } else if (method.equals("POST") || method.equals("PUT")) {
-            response = connection -> connection.accept(
-                okay,
-                new HashSet<>(zero),
-                FlowAdapters.toFlowPublisher(
+                break;
+            case POST:
+            case PUT:
+                response = connection -> connection.accept(
+                    RsStatus.OK,
+                    new HashSet<>(zero),
                     this.storage.save(
                         key,
-                        new Content.From(Flowable.fromPublisher(reactive))
+                        new Content.From(publisher)
                     ).andThen(Flowable.empty())
-                )
-            );
-        } else {
-            final int nfound = 404;
-            response = new RsWithStatus(nfound);
+                );
+                break;
+            default:
+                response = new RsWithStatus(RsStatus.NOT_FOUND);
+                break;
         }
         return response;
     }
