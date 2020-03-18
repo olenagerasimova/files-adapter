@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
@@ -137,7 +138,7 @@ public class FileSliceITCase {
         MatcherAssert.assertThat(
             new String(
                 Files.readAllBytes(
-                    Path.of(temp.toString(), hellot)
+                    Paths.get(temp.toString(), hellot)
                 )
             ), new IsEqual<>(hello)
         );
@@ -178,7 +179,7 @@ public class FileSliceITCase {
         MatcherAssert.assertThat(
             new String(
                 Files.readAllBytes(
-                    Path.of(temp.toString(), hellot)
+                    Paths.get(temp.toString(), hellot)
                 )
             ), new IsEqual<>(hello)
         );
