@@ -79,7 +79,12 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>http</artifactId>
-      <version>0.6.1</version>
+      <version>0.7.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.cactoos</groupId>
+      <artifactId>cactoos</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.artipie</groupId>
