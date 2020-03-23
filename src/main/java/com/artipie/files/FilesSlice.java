@@ -23,79 +23,38 @@
  */
 package com.artipie.files;
 
-import com.artipie.asto.Content;
-import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.rx.RxStorage;
-import com.artipie.asto.rx.RxStorageWrapper;
-import com.artipie.http.Response;
 import com.artipie.http.Slice;
-import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Map;
-import org.reactivestreams.Publisher;
+import com.artipie.http.rt.RtRule;
+import com.artipie.http.rt.SliceRoute;
+import com.artipie.http.slice.SliceDownload;
+import com.artipie.http.slice.SliceSimple;
+import com.artipie.http.slice.SliceUpload;
 
 /**
  * A {@link Slice} which servers binary files.
  *
  * @since 0.1
  */
-public final class FilesSlice implements Slice {
-
-    /**
-     * The storage.
-     */
-    private final RxStorage storage;
+public final class FilesSlice extends Slice.Wrap {
 
     /**
      * Ctor.
      * @param storage The storage.
      */
     public FilesSlice(final Storage storage) {
-        this.storage = new RxStorageWrapper(storage);
-    }
-
-    @Override
-    public Response response(
-        final String line,
-        final Iterable<Map.Entry<String, String>> headers,
-        final Publisher<ByteBuffer> publisher) {
-        final RequestLineFrom rline = new RequestLineFrom(line);
-        final Key key = new Key.From(rline.uri().toString().substring(1).split("/"));
-        final Response response;
-        final RqMethod method = rline.method();
-        final int zero = 0;
-        switch (method) {
-            case GET:
-                response = connection -> connection.accept(
-                    RsStatus.OK,
-                    new HashSet<>(zero),
-                    Flowable.fromPublisher(publisher)
-                        .flatMapCompletable(byteBuffer -> Completable.complete())
-                        .andThen(this.storage.value(key).flatMapPublisher(flow -> flow))
-                );
-                break;
-            case POST:
-            case PUT:
-                response = connection -> connection.accept(
-                    RsStatus.OK,
-                    new HashSet<>(zero),
-                    this.storage.save(
-                        key,
-                        new Content.From(publisher)
-                    ).andThen(Flowable.empty())
-                );
-                break;
-            default:
-                response = new RsWithStatus(RsStatus.NOT_FOUND);
-                break;
-        }
-        return response;
+        super(
+            new SliceRoute(
+                new SliceRoute.Path(new RtRule.ByMethod(RqMethod.GET), new SliceDownload(storage)),
+                new SliceRoute.Path(new RtRule.ByMethod(RqMethod.PUT), new SliceUpload(storage)),
+                new SliceRoute.Path(
+                    RtRule.FALLBACK,
+                    new SliceSimple(new RsWithStatus(RsStatus.METHOD_NOT_ALLOWED))
+                )
+            )
+        );
     }
 }
