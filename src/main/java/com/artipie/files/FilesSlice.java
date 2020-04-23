@@ -58,9 +58,9 @@ public final class FilesSlice extends Slice.Wrap {
      * Ctor.
      * @param storage The storage.
      * @param perms Access permissions.
-     * @param ids Concrete identities.
+     * @param users Concrete identities.
      */
-    public FilesSlice(final Storage storage, final Permissions perms, final Identities ids) {
+    public FilesSlice(final Storage storage, final Permissions perms, final Identities users) {
         super(
             new SliceRoute(
                 new SliceRoute.Path(
@@ -68,7 +68,7 @@ public final class FilesSlice extends Slice.Wrap {
                         new SliceAuth(
                             new SliceDownload(storage),
                             new Permission.ByName("download", perms),
-                            ids
+                            users
                         )
                 ),
                 new SliceRoute.Path(
@@ -76,7 +76,7 @@ public final class FilesSlice extends Slice.Wrap {
                         new SliceAuth(
                             new SliceUpload(storage),
                             new Permission.ByName("upload", perms),
-                            ids
+                            users
                         )
                 ),
                 new SliceRoute.Path(
