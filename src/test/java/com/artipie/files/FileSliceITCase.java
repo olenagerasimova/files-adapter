@@ -31,16 +31,15 @@ import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.client.WebClient;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Tests for files adapter.
@@ -122,7 +121,7 @@ public class FileSliceITCase {
      * @throws IOException If fails.
      */
     @Test
-    void testDownloadsFilesWithComplexName (@TempDir final Path temp) throws IOException {
+    void testDownloadsFilesWithComplexName(@TempDir final Path temp) throws IOException {
         final String hello = "Hellooo world!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
