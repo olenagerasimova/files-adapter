@@ -25,6 +25,8 @@ package com.artipie.files;
 
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
+import com.artipie.http.auth.Authentication;
+import com.artipie.http.auth.BasicIdentities;
 import com.artipie.http.auth.Identities;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
@@ -55,12 +57,22 @@ public final class FilesSlice extends Slice.Wrap {
     }
 
     /**
-     * Ctor.
+     * Ctor used by Artipie server which knows `Authentication` implementation.
+     * @param storage The storage. And default parameters for free access.
+     * @param perms Access permissions.
+     * @param auth Auth details.
+     */
+    public FilesSlice(final Storage storage, final Permissions perms, final Authentication auth) {
+        this(storage, perms, new BasicIdentities(auth));
+    }
+
+    /**
+     * Private ctor. Since Artipie doesn't know about `Identities` implementation.
      * @param storage The storage.
      * @param perms Access permissions.
      * @param users Concrete identities.
      */
-    public FilesSlice(final Storage storage, final Permissions perms, final Identities users) {
+    private FilesSlice(final Storage storage, final Permissions perms, final Identities users) {
         super(
             new SliceRoute(
                 new SliceRoute.Path(
