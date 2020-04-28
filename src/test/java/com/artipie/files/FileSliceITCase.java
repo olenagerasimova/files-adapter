@@ -58,7 +58,7 @@ public class FileSliceITCase {
      * @throws IOException If fails.
      */
     @Test
-    void putWorks(@TempDir final Path temp) throws IOException {
+    void testUploadFile(@TempDir final Path temp) throws IOException {
         final String hello = "Hello world!!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
@@ -89,7 +89,7 @@ public class FileSliceITCase {
      * @throws IOException if failed
      */
     @Test
-    void complexNamePutWorks(@TempDir final Path temp) throws IOException {
+    void testUploadFileWithComplexName(@TempDir final Path temp) throws IOException {
         final String hello = "Hello world!!!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
@@ -121,7 +121,7 @@ public class FileSliceITCase {
      * @throws IOException If fails.
      */
     @Test
-    void getComplexNameWorks(@TempDir final Path temp) throws IOException {
+    void testDownloadsFilesWithComplexName(@TempDir final Path temp) throws IOException {
         final String hello = "Hellooo world!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
@@ -162,7 +162,7 @@ public class FileSliceITCase {
      * @throws IOException If fails.
      */
     @Test
-    void getWorks(@TempDir final Path temp) throws IOException {
+    void testDownloadsFile(@TempDir final Path temp) throws IOException {
         final String hello = "Hello world!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
