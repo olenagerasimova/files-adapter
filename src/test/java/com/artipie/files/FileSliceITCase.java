@@ -58,11 +58,11 @@ public class FileSliceITCase {
      * @throws IOException If fails.
      */
     @Test
-    void testUploadFile(@TempDir final Path temp) throws IOException {
+    void testUploadFile(@TempDir final Path temp) throws Exception {
         final String hello = "Hello world!!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
-        final Storage storage = new FileStorage(temp, vertx.fileSystem());
+        final Storage storage = new FileStorage(temp);
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new FilesSlice(storage),
@@ -89,11 +89,11 @@ public class FileSliceITCase {
      * @throws IOException if failed
      */
     @Test
-    void testUploadFileWithComplexName(@TempDir final Path temp) throws IOException {
+    void testUploadFileWithComplexName(@TempDir final Path temp) throws Exception {
         final String hello = "Hello world!!!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
-        final Storage storage = new FileStorage(temp, vertx.fileSystem());
+        final Storage storage = new FileStorage(temp);
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new FilesSlice(storage),
@@ -121,11 +121,11 @@ public class FileSliceITCase {
      * @throws IOException If fails.
      */
     @Test
-    void testDownloadsFilesWithComplexName(@TempDir final Path temp) throws IOException {
+    void testDownloadsFilesWithComplexName(@TempDir final Path temp) throws Exception {
         final String hello = "Hellooo world!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
-        final Storage storage = new FileStorage(temp, vertx.fileSystem());
+        final Storage storage = new FileStorage(temp);
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new FilesSlice(storage),
@@ -162,11 +162,11 @@ public class FileSliceITCase {
      * @throws IOException If fails.
      */
     @Test
-    void testDownloadsFile(@TempDir final Path temp) throws IOException {
+    void testDownloadsFile(@TempDir final Path temp) throws Exception {
         final String hello = "Hello world!!";
         final int port = this.rndPort();
         final Vertx vertx = Vertx.vertx();
-        final Storage storage = new FileStorage(temp, vertx.fileSystem());
+        final Storage storage = new FileStorage(temp);
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new FilesSlice(storage),

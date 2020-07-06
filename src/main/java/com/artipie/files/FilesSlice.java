@@ -35,6 +35,7 @@ import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rt.RtRule;
+import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
@@ -75,23 +76,23 @@ public final class FilesSlice extends Slice.Wrap {
     private FilesSlice(final Storage storage, final Permissions perms, final Identities users) {
         super(
             new SliceRoute(
-                new SliceRoute.Path(
+                new RtRulePath(
                     new RtRule.ByMethod(RqMethod.GET),
-                        new SliceAuth(
-                            new SliceDownload(storage),
-                            new Permission.ByName("download", perms),
-                            users
-                        )
+                    new SliceAuth(
+                        new SliceDownload(storage),
+                        new Permission.ByName("download", perms),
+                        users
+                    )
                 ),
-                new SliceRoute.Path(
+                new RtRulePath(
                     new RtRule.ByMethod(RqMethod.PUT),
-                        new SliceAuth(
-                            new SliceUpload(storage),
-                            new Permission.ByName("upload", perms),
-                            users
-                        )
+                    new SliceAuth(
+                        new SliceUpload(storage),
+                        new Permission.ByName("upload", perms),
+                        users
+                    )
                 ),
-                new SliceRoute.Path(
+                new RtRulePath(
                     RtRule.FALLBACK,
                     new SliceSimple(new RsWithStatus(RsStatus.METHOD_NOT_ALLOWED))
                 )
