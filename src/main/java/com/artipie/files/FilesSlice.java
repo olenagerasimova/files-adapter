@@ -24,6 +24,7 @@
 package com.artipie.files;
 
 import com.artipie.asto.Storage;
+import com.artipie.http.Headers;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.BasicIdentities;
@@ -31,6 +32,7 @@ import com.artipie.http.auth.Identities;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.auth.SliceAuth;
+import com.artipie.http.headers.ContentType;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
@@ -40,6 +42,7 @@ import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
 import com.artipie.http.slice.SliceUpload;
+import com.artipie.http.slice.SliceWithHeaders;
 
 /**
  * A {@link Slice} which servers binary files.
@@ -79,7 +82,10 @@ public final class FilesSlice extends Slice.Wrap {
                 new RtRulePath(
                     new RtRule.ByMethod(RqMethod.GET),
                     new SliceAuth(
-                        new SliceDownload(storage),
+                        new SliceWithHeaders(
+                            new SliceDownload(storage),
+                            new Headers.From(new ContentType("application/octet-stream"))
+                        ),
                         new Permission.ByName("download", perms),
                         users
                     )

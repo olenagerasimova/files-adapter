@@ -27,6 +27,7 @@ import com.artipie.http.Headers;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
+import com.artipie.http.headers.ContentType;
 import com.artipie.http.headers.Header;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
@@ -45,7 +46,7 @@ import org.reactivestreams.Publisher;
  * Binary files proxy {@link Slice} implementation.
  * @since 0.4
  */
-public final class ProxySlice implements Slice {
+public final class FileProxySlice implements Slice {
 
     /**
      * Maven Repository.
@@ -57,7 +58,7 @@ public final class ProxySlice implements Slice {
      *
      * @param repo Maven Repository.
      */
-    public ProxySlice(final Repository repo) {
+    public FileProxySlice(final Repository repo) {
         this.repo = repo;
     }
 
@@ -78,6 +79,8 @@ public final class ProxySlice implements Slice {
                     ),
                     RsStatus.OK
                 )
+            ).<Response>thenApply(
+                resp -> new RsWithHeaders(resp, new ContentType("application/octet-stream"))
             ).exceptionally(
                 err -> {
                     final Throwable source;
