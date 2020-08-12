@@ -84,7 +84,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
-      <version>0.23.2</version>
+      <version>0.23.5</version>
     </dependency>
     <!-- Test only dependencies -->
     <dependency>
@@ -123,7 +123,12 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>http</artifactId>
-      <version>0.14.2</version>
+      <version>0.15.5</version>
+    </dependency>
+    <dependency>
+      <groupId>com.artipie</groupId>
+      <artifactId>http-client</artifactId>
+      <version>0.1.1</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -137,6 +142,9 @@ SOFTWARE.
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <parallel>none</parallel>
+          <systemPropertyVariables combine.children="append">
+            <test.vertx.port>${test.vertx.port}</test.vertx.port>
+          </systemPropertyVariables>
         </configuration>
         <executions>
           <execution>
@@ -144,6 +152,28 @@ SOFTWARE.
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>reserve-server-port</id>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <portNames>
+                <portName>test.vertx.port</portName>
+              </portNames>
+              <minPortNumber>49152</minPortNumber>
+              <maxPortNumber>65535</maxPortNumber>
+              <randomPort>true</randomPort>
+            </configuration>
           </execution>
         </executions>
       </plugin>

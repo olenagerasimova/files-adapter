@@ -23,23 +23,19 @@
  */
 package com.artipie.files;
 
-import com.artipie.http.Headers;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
-import com.artipie.http.async.AsyncResponse;
-import com.artipie.http.headers.ContentType;
-import com.artipie.http.headers.Header;
+import com.artipie.http.client.ClientSlices;
+import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
-import com.artipie.http.rs.RsWithBody;
-import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
-import com.artipie.http.rs.StandardRs;
-import com.jcabi.log.Logger;
+import com.artipie.http.slice.SliceSimple;
+import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletionException;
+import org.apache.http.client.utils.URIBuilder;
 import org.reactivestreams.Publisher;
 
 /**
@@ -49,17 +45,25 @@ import org.reactivestreams.Publisher;
 public final class FileProxySlice implements Slice {
 
     /**
-     * Maven Repository.
+     * Client slice.
      */
-    private final Repository repo;
+    private final Slice client;
 
     /**
-     * Ctor.
-     *
-     * @param repo Maven Repository.
+     * New files proxy slice.
+     * @param clients HTTP clients
+     * @param remote Remote URI
      */
-    public FileProxySlice(final Repository repo) {
-        this.repo = repo;
+    public FileProxySlice(final ClientSlices clients, final URI remote) {
+        this(new ClientSlice(clients, remote));
+    }
+
+    /**
+     * New files proxy slice.
+     * @param client HTTP client slice
+     */
+    private FileProxySlice(final Slice client) {
+        this.client = client;
     }
 
     @Override
@@ -67,41 +71,66 @@ public final class FileProxySlice implements Slice {
         final String line, final Iterable<Entry<String, String>> headers,
         final Publisher<ByteBuffer> body
     ) {
-        return new AsyncResponse(
-            this.repo.artifact(new RequestLineFrom(line).uri()).<Response>thenApply(
-                content -> new RsWithStatus(
-                    new RsWithHeaders(
-                        new RsWithBody(content),
-                        content.size()
-                            .map(size -> new Header("Content-Length", Long.toString(size)))
-                            .<Headers>map(Headers.From::new)
-                            .orElse(Headers.EMPTY)
-                    ),
-                    RsStatus.OK
-                )
-            ).<Response>thenApply(
-                resp -> new RsWithHeaders(resp, new ContentType("application/octet-stream"))
-            ).exceptionally(
-                err -> {
-                    final Throwable source;
-                    if (err instanceof CompletionException) {
-                        source = CompletionException.class.cast(err).getCause();
-                    } else {
-                        source = err;
-                    }
-                    final Response rsp;
-                    if (source instanceof ArtifactNotFoundException) {
-                        rsp = StandardRs.NOT_FOUND;
-                    } else {
-                        Logger.error(this, "Failed to download artifact: %[exception]s", source);
-                        rsp = new RsWithStatus(
-                            new RsWithBody(err.getMessage(), StandardCharsets.UTF_8),
-                            RsStatus.INTERNAL_ERROR
-                        );
-                    }
-                    return rsp;
-                }
-            )
-        );
+        return this.client.response(line, headers, body);
+    }
+
+    /**
+     * Client slice.
+     * @since 0.5
+     */
+    private static final class ClientSlice implements Slice {
+
+        /**
+         * Client HTTP slices.
+         */
+        private final ClientSlices clients;
+
+        /**
+         * Remote URI.
+         */
+        private final URI remote;
+
+        /**
+         * New client slice from remote URI.
+         * @param clients Slice clients
+         * @param remote Remote URI
+         */
+        ClientSlice(final ClientSlices clients, final URI remote) {
+            this.clients = clients;
+            this.remote = remote;
+        }
+
+        @Override
+        public Response response(final String line, final Iterable<Entry<String, String>> headers,
+            final Publisher<ByteBuffer> body) {
+            final Slice slice;
+            final String host = this.remote.getHost();
+            final int port = this.remote.getPort();
+            switch (this.remote.getScheme()) {
+                case "https":
+                    slice = this.clients.https(host, port);
+                    break;
+                case "http":
+                    slice = this.clients.http(host, port);
+                    break;
+                default:
+                    slice = new SliceSimple(new RsWithStatus(RsStatus.INTERNAL_ERROR));
+                    break;
+            }
+            final RequestLineFrom rqline = new RequestLineFrom(line);
+            final URI uri = rqline.uri();
+            return slice.response(
+                new RequestLine(
+                    rqline.method().value(),
+                    new URIBuilder(uri)
+                        .setPath(
+                            Paths.get(this.remote.getPath(), uri.getPath())
+                                .normalize().toString()
+                        ).toString(),
+                    rqline.version()
+                ).toString(),
+                headers, body
+            );
+        }
     }
 }
