@@ -52,7 +52,7 @@ final class FileSliceITCase {
     /**
      * The port of slice server.
      */
-    private static final int PORT = new RandomPort().value();
+    private int port;
 
     /**
      * Vertx instance.
@@ -73,10 +73,8 @@ final class FileSliceITCase {
     void setUp() {
         this.vertx = Vertx.vertx();
         this.storage = new InMemoryStorage();
-        this.server = new VertxSliceServer(
-            this.vertx, new FilesSlice(this.storage), FileSliceITCase.PORT
-        );
-        this.server.start();
+        this.server = new VertxSliceServer(this.vertx, new FilesSlice(this.storage));
+        this.port = this.server.start();
     }
 
     @AfterEach
@@ -89,7 +87,7 @@ final class FileSliceITCase {
     void testUploadFile() throws Exception {
         final String hello = "Hello world!!!";
         final WebClient web = WebClient.create(this.vertx);
-        web.put(FileSliceITCase.PORT, FileSliceITCase.HOST, "/hello.txt")
+        web.put(this.port, FileSliceITCase.HOST, "/hello.txt")
             .rxSendBuffer(Buffer.buffer(hello.getBytes()))
             .blockingGet();
         MatcherAssert.assertThat(
@@ -105,7 +103,7 @@ final class FileSliceITCase {
     void testUploadFileWithComplexName() throws Exception {
         final String hello = "Hello world!!!!";
         final WebClient web = WebClient.create(this.vertx);
-        web.put(FileSliceITCase.PORT, FileSliceITCase.HOST, "/hello/world.txt")
+        web.put(this.port, FileSliceITCase.HOST, "/hello/world.txt")
             .rxSendBuffer(Buffer.buffer(hello.getBytes()))
             .blockingGet();
         MatcherAssert.assertThat(
@@ -125,7 +123,7 @@ final class FileSliceITCase {
         new BlockingStorage(this.storage).save(new Key.From(hellot), hello.getBytes());
         MatcherAssert.assertThat(
             new String(
-                web.get(FileSliceITCase.PORT, FileSliceITCase.HOST, String.format("/%s", hellot))
+                web.get(this.port, FileSliceITCase.HOST, String.format("/%s", hellot))
                     .rxSend()
                     .blockingGet()
                     .bodyAsBuffer()
@@ -144,7 +142,7 @@ final class FileSliceITCase {
         new BlockingStorage(this.storage).save(new Key.From(hellot), hello.getBytes());
         MatcherAssert.assertThat(
             new String(
-                web.get(FileSliceITCase.PORT, FileSliceITCase.HOST, "/hello1.txt")
+                web.get(this.port, FileSliceITCase.HOST, "/hello1.txt")
                     .rxSend()
                     .blockingGet()
                     .bodyAsBuffer()

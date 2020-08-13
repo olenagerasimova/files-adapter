@@ -55,11 +55,6 @@ final class FileProxySliceITCase {
     private static final String HOST = "localhost";
 
     /**
-     * The port of slice server.
-     */
-    private static final int PORT = new RandomPort().value();
-
-    /**
      * Vertx instance.
      */
     private Vertx vertx;
@@ -68,6 +63,11 @@ final class FileProxySliceITCase {
      * Storage for server.
      */
     private Storage storage;
+
+    /**
+     * Server port.
+     */
+    private int port;
 
     /**
      * Jetty HTTP client slices.
@@ -83,10 +83,8 @@ final class FileProxySliceITCase {
     void setUp() throws Exception {
         this.vertx = Vertx.vertx();
         this.storage = new InMemoryStorage();
-        this.server = new VertxSliceServer(
-            this.vertx, new FilesSlice(this.storage), FileProxySliceITCase.PORT
-        );
-        this.server.start();
+        this.server = new VertxSliceServer(this.vertx, new FilesSlice(this.storage));
+        this.port = this.server.start();
         this.clients.start();
     }
 
@@ -107,7 +105,7 @@ final class FileProxySliceITCase {
                 this.clients,
                 new URIBuilder().setScheme("http")
                     .setHost(FileProxySliceITCase.HOST)
-                    .setPort(FileProxySliceITCase.PORT)
+                    .setPort(this.port)
                     .setPath("/foo")
                     .build()
             ).response(
