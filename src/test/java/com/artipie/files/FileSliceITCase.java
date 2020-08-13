@@ -52,7 +52,7 @@ final class FileSliceITCase {
     /**
      * The port of slice server.
      */
-    private static final int PORT = Integer.getInteger("test.vertx.port");
+    private static final int PORT = new RandomPort().value();
 
     /**
      * Vertx instance.

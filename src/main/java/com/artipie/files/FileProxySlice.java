@@ -28,13 +28,12 @@ import com.artipie.http.Slice;
 import com.artipie.http.client.ClientSlices;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RequestLineFrom;
-import com.artipie.http.rs.RsStatus;
-import com.artipie.http.rs.RsWithStatus;
-import com.artipie.http.slice.SliceSimple;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.http.client.utils.URIBuilder;
 import org.reactivestreams.Publisher;
 
@@ -106,7 +105,8 @@ public final class FileProxySlice implements Slice {
             final Slice slice;
             final String host = this.remote.getHost();
             final int port = this.remote.getPort();
-            switch (this.remote.getScheme()) {
+            final String scheme = this.remote.getScheme();
+            switch (scheme) {
                 case "https":
                     slice = this.clients.https(host, port);
                     break;
@@ -114,8 +114,9 @@ public final class FileProxySlice implements Slice {
                     slice = this.clients.http(host, port);
                     break;
                 default:
-                    slice = new SliceSimple(new RsWithStatus(RsStatus.INTERNAL_ERROR));
-                    break;
+                    throw new IllegalStateException(
+                        String.format("Scheme '%s' is not supported", scheme)
+                    );
             }
             final RequestLineFrom rqline = new RequestLineFrom(line);
             final URI uri = rqline.uri();
@@ -123,14 +124,26 @@ public final class FileProxySlice implements Slice {
                 new RequestLine(
                     rqline.method().value(),
                     new URIBuilder(uri)
-                        .setPath(
-                            Paths.get(this.remote.getPath(), uri.getPath())
-                                .normalize().toString()
-                        ).toString(),
+                        .setPath(concatPaths(this.remote.getPath(), uri.getPath()))
+                        .toString(),
                     rqline.version()
                 ).toString(),
                 headers, body
             );
+        }
+
+        /**
+         * Concat multiple paths into single.
+         * @param paths URI paths
+         * @return Merged path string
+         */
+        private static String concatPaths(final String... paths) {
+            final String rel = Stream.of(paths).map(
+                path -> path.replaceAll("(?:^/|/$)", "")
+            ).flatMap(path -> Arrays.stream(path.split("/")))
+                .filter(part -> !part.isEmpty())
+                .collect(Collectors.joining("/"));
+            return String.format("/%s", rel);
         }
     }
 }

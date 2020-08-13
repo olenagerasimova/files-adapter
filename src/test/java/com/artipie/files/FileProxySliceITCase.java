@@ -57,7 +57,7 @@ final class FileProxySliceITCase {
     /**
      * The port of slice server.
      */
-    private static final int PORT = Integer.getInteger("test.vertx.port");
+    private static final int PORT = new RandomPort().value();
 
     /**
      * Vertx instance.
@@ -70,42 +70,48 @@ final class FileProxySliceITCase {
     private Storage storage;
 
     /**
+     * Jetty HTTP client slices.
+     */
+    private final JettyClientSlices clients = new JettyClientSlices();
+
+    /**
      * Slice server.
      */
     private VertxSliceServer server;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         this.vertx = Vertx.vertx();
         this.storage = new InMemoryStorage();
         this.server = new VertxSliceServer(
             this.vertx, new FilesSlice(this.storage), FileProxySliceITCase.PORT
         );
         this.server.start();
+        this.clients.start();
     }
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws Exception {
         this.server.stop();
         this.vertx.close();
+        this.clients.stop();
     }
 
     @Test
     void sendsRequestsViaProxy() throws Exception {
         final String data = "hello";
         new BlockingStorage(this.storage)
-            .save(new Key.From("foo"), data.getBytes(StandardCharsets.UTF_8));
-        final JettyClientSlices clients = new JettyClientSlices();
-        clients.start();
+            .save(new Key.From("foo/bar"), data.getBytes(StandardCharsets.UTF_8));
         MatcherAssert.assertThat(
             new FileProxySlice(
-                clients,
+                this.clients,
                 new URIBuilder().setScheme("http")
                     .setHost(FileProxySliceITCase.HOST)
                     .setPort(FileProxySliceITCase.PORT)
+                    .setPath("/foo")
                     .build()
             ).response(
-                new RequestLine(RqMethod.GET, "/foo").toString(),
+                new RequestLine(RqMethod.GET, "/bar").toString(),
                 Headers.EMPTY, Content.EMPTY
             ),
             new RsHasBody(data.getBytes(StandardCharsets.UTF_8))
