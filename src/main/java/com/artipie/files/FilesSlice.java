@@ -39,6 +39,7 @@ import com.artipie.http.rt.ByMethodsRule;
 import com.artipie.http.rt.RtRule;
 import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
+import com.artipie.http.slice.SliceDelete;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
 import com.artipie.http.slice.SliceUpload;
@@ -95,6 +96,14 @@ public final class FilesSlice extends Slice.Wrap {
                     new SliceAuth(
                         new SliceUpload(storage),
                         new Permission.ByName("upload", perms),
+                        users
+                    )
+                ),
+                new RtRulePath(
+                    ByMethodsRule.Standard.DELETE,
+                    new SliceAuth(
+                        new SliceDelete(storage),
+                        new Permission.ByName("delete", perms),
                         users
                     )
                 ),

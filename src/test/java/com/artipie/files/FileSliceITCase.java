@@ -152,4 +152,19 @@ final class FileSliceITCase {
             new IsEqual<>(hello)
         );
     }
+
+    @Test
+    void testDeletesFile() throws Exception {
+        final String hello = "Hello world!";
+        final WebClient web = WebClient.create(this.vertx);
+        final String hellot = "hell.txt";
+        new BlockingStorage(this.storage).save(new Key.From(hellot), hello.getBytes());
+        web.delete(this.port, FileSliceITCase.HOST, "/hell.txt")
+            .rxSend()
+            .blockingGet();
+        MatcherAssert.assertThat(
+            new BlockingStorage(this.storage).exists(new Key.From(hellot)),
+            new IsEqual<>(false)
+        );
+    }
 }
