@@ -26,6 +26,7 @@ package com.artipie.files;
 import com.artipie.asto.Storage;
 import com.artipie.http.Headers;
 import com.artipie.http.Slice;
+import com.artipie.http.auth.Action;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.BasicIdentities;
 import com.artipie.http.auth.Identities;
@@ -87,7 +88,7 @@ public final class FilesSlice extends Slice.Wrap {
                             new SliceDownload(storage),
                             new Headers.From(new ContentType("application/octet-stream"))
                         ),
-                        new Permission.ByName("download", perms),
+                        new Permission.ByName(perms, Action.Standard.READ),
                         users
                     )
                 ),
@@ -95,7 +96,7 @@ public final class FilesSlice extends Slice.Wrap {
                     ByMethodsRule.Standard.PUT,
                     new SliceAuth(
                         new SliceUpload(storage),
-                        new Permission.ByName("upload", perms),
+                        new Permission.ByName(perms, Action.Standard.WRITE),
                         users
                     )
                 ),
@@ -103,7 +104,7 @@ public final class FilesSlice extends Slice.Wrap {
                     ByMethodsRule.Standard.DELETE,
                     new SliceAuth(
                         new SliceDelete(storage),
-                        new Permission.ByName("delete", perms),
+                        new Permission.ByName(perms, Action.Standard.DELETE),
                         users
                     )
                 ),
