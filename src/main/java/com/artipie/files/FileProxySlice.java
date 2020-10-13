@@ -23,25 +23,18 @@
  */
 package com.artipie.files;
 
-import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.client.ClientSlices;
 import com.artipie.http.client.UriClientSlice;
+import com.artipie.http.client.auth.AuthClientSlice;
+import com.artipie.http.client.auth.Authenticator;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.Map.Entry;
-import org.reactivestreams.Publisher;
 
 /**
  * Binary files proxy {@link Slice} implementation.
  * @since 0.4
  */
-public final class FileProxySlice implements Slice {
-
-    /**
-     * Client slice.
-     */
-    private final Slice client;
+public final class FileProxySlice extends Slice.Wrap {
 
     /**
      * New files proxy slice.
@@ -49,22 +42,16 @@ public final class FileProxySlice implements Slice {
      * @param remote Remote URI
      */
     public FileProxySlice(final ClientSlices clients, final URI remote) {
-        this(new UriClientSlice(clients, remote));
+        super(new UriClientSlice(clients, remote));
     }
 
     /**
      * New files proxy slice.
-     * @param client HTTP client slice
+     * @param clients HTTP clients
+     * @param remote Remote URI
+     * @param auth Authenticator
      */
-    private FileProxySlice(final Slice client) {
-        this.client = client;
-    }
-
-    @Override
-    public Response response(
-        final String line, final Iterable<Entry<String, String>> headers,
-        final Publisher<ByteBuffer> body
-    ) {
-        return this.client.response(line, headers, body);
+    public FileProxySlice(final ClientSlices clients, final URI remote, final Authenticator auth) {
+        super(new AuthClientSlice(new UriClientSlice(clients, remote), auth));
     }
 }
