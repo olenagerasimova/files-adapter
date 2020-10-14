@@ -23,14 +23,13 @@
  */
 package com.artipie.files;
 
-import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.memory.InMemoryStorage;
-import com.artipie.http.Headers;
 import com.artipie.http.client.jetty.JettyClientSlices;
 import com.artipie.http.hm.RsHasBody;
+import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.vertx.VertxSliceServer;
@@ -108,11 +107,11 @@ final class FileProxySliceITCase {
                     .setPort(this.port)
                     .setPath("/foo")
                     .build()
-            ).response(
-                new RequestLine(RqMethod.GET, "/bar").toString(),
-                Headers.EMPTY, Content.EMPTY
             ),
-            new RsHasBody(data.getBytes(StandardCharsets.UTF_8))
+            new SliceHasResponse(
+                new RsHasBody(data.getBytes(StandardCharsets.UTF_8)),
+                new RequestLine(RqMethod.GET, "/bar")
+            )
         );
     }
 }
