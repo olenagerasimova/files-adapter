@@ -23,95 +23,97 @@
  */
 package com.artipie.files;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.http.Headers;
+import com.artipie.http.Slice;
+import com.artipie.http.auth.Authentication;
+import com.artipie.http.client.auth.GenericAuthenticator;
 import com.artipie.http.client.jetty.JettyClientSlices;
-import com.artipie.http.hm.RsHasBody;
-import com.artipie.http.hm.SliceHasResponse;
+import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
+import com.artipie.http.rs.RsStatus;
+import com.artipie.http.slice.LoggingSlice;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
-import java.nio.charset.StandardCharsets;
-import org.apache.http.client.utils.URIBuilder;
+import java.net.URI;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for files adapter.
- * @since 0.5
+ * Test for {@link FileProxySlice} to verify it works with target requiring authentication.
+ *
+ * @since 0.6
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-final class FileProxySliceITCase {
-
-    /**
-     * The host to send requests to.
-     */
-    private static final String HOST = "localhost";
+final class FileProxySliceAuthIT {
 
     /**
      * Vertx instance.
      */
-    private Vertx vertx;
+    private static final Vertx VERTX = Vertx.vertx();
 
     /**
-     * Storage for server.
+     * Jetty client.
      */
-    private Storage storage;
+    private final JettyClientSlices client = new JettyClientSlices();
 
     /**
-     * Server port.
+     * Maven proxy.
      */
-    private int port;
+    private Slice proxy;
 
     /**
-     * Jetty HTTP client slices.
-     */
-    private final JettyClientSlices clients = new JettyClientSlices();
-
-    /**
-     * Slice server.
+     * Vertx slice server instance.
      */
     private VertxSliceServer server;
 
     @BeforeEach
     void setUp() throws Exception {
-        this.vertx = Vertx.vertx();
-        this.storage = new InMemoryStorage();
-        this.server = new VertxSliceServer(this.vertx, new FilesSlice(this.storage));
-        this.port = this.server.start();
-        this.clients.start();
+        final Storage storage = new InMemoryStorage();
+        storage.save(new Key.From("foo", "bar"), new Content.From("baz".getBytes()))
+            .toCompletableFuture().join();
+        final String username = "alice";
+        final String password = "qwerty";
+        this.server = new VertxSliceServer(
+            FileProxySliceAuthIT.VERTX,
+            new LoggingSlice(
+                new FilesSlice(
+                    storage,
+                    (user, action) -> user.name().equals(username),
+                    new Authentication.Single(username, password)
+                )
+            )
+        );
+        final int port = this.server.start();
+        this.client.start();
+        this.proxy = new LoggingSlice(
+            new FileProxySlice(
+                this.client,
+                URI.create(String.format("http://localhost:%d", port)),
+                new GenericAuthenticator(username, password)
+            )
+        );
     }
 
     @AfterEach
     void tearDown() throws Exception {
+        this.client.stop();
         this.server.stop();
-        this.vertx.close();
-        this.clients.stop();
     }
 
     @Test
-    void sendsRequestsViaProxy() throws Exception {
-        final String data = "hello";
-        new BlockingStorage(this.storage)
-            .save(new Key.From("foo/bar"), data.getBytes(StandardCharsets.UTF_8));
+    void shouldGet() {
         MatcherAssert.assertThat(
-            new FileProxySlice(
-                this.clients,
-                new URIBuilder().setScheme("http")
-                    .setHost(FileProxySliceITCase.HOST)
-                    .setPort(this.port)
-                    .setPath("/foo")
-                    .build()
+            this.proxy.response(
+                new RequestLine(RqMethod.GET, "/foo/bar").toString(), Headers.EMPTY, Content.EMPTY
             ),
-            new SliceHasResponse(
-                new RsHasBody(data.getBytes(StandardCharsets.UTF_8)),
-                new RequestLine(RqMethod.GET, "/bar")
-            )
+            new RsHasStatus(RsStatus.OK)
         );
     }
 }

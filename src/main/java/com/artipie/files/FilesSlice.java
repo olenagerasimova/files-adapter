@@ -28,11 +28,9 @@ import com.artipie.http.Headers;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Action;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.BasicIdentities;
-import com.artipie.http.auth.Identities;
+import com.artipie.http.auth.BasicAuthSlice;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
-import com.artipie.http.auth.SliceAuth;
 import com.artipie.http.headers.ContentType;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
@@ -59,7 +57,7 @@ public final class FilesSlice extends Slice.Wrap {
      * @param storage The storage. And default parameters for free access.
      */
     public FilesSlice(final Storage storage) {
-        this(storage, Permissions.FREE, Identities.ANONYMOUS);
+        this(storage, Permissions.FREE, Authentication.ANONYMOUS);
     }
 
     /**
@@ -69,43 +67,33 @@ public final class FilesSlice extends Slice.Wrap {
      * @param auth Auth details.
      */
     public FilesSlice(final Storage storage, final Permissions perms, final Authentication auth) {
-        this(storage, perms, new BasicIdentities(auth));
-    }
-
-    /**
-     * Private ctor. Since Artipie doesn't know about `Identities` implementation.
-     * @param storage The storage.
-     * @param perms Access permissions.
-     * @param users Concrete identities.
-     */
-    private FilesSlice(final Storage storage, final Permissions perms, final Identities users) {
         super(
             new SliceRoute(
                 new RtRulePath(
                     ByMethodsRule.Standard.GET,
-                    new SliceAuth(
+                    new BasicAuthSlice(
                         new SliceWithHeaders(
                             new SliceDownload(storage),
                             new Headers.From(new ContentType("application/octet-stream"))
                         ),
-                        new Permission.ByName(perms, Action.Standard.READ),
-                        users
+                        auth,
+                        new Permission.ByName(perms, Action.Standard.READ)
                     )
                 ),
                 new RtRulePath(
                     ByMethodsRule.Standard.PUT,
-                    new SliceAuth(
+                    new BasicAuthSlice(
                         new SliceUpload(storage),
-                        new Permission.ByName(perms, Action.Standard.WRITE),
-                        users
+                        auth,
+                        new Permission.ByName(perms, Action.Standard.WRITE)
                     )
                 ),
                 new RtRulePath(
                     ByMethodsRule.Standard.DELETE,
-                    new SliceAuth(
+                    new BasicAuthSlice(
                         new SliceDelete(storage),
-                        new Permission.ByName(perms, Action.Standard.DELETE),
-                        users
+                        auth,
+                        new Permission.ByName(perms, Action.Standard.DELETE)
                     )
                 ),
                 new RtRulePath(
