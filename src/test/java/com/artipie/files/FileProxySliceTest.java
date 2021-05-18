@@ -179,7 +179,7 @@ final class FileProxySliceTest {
     @Test
     void returnsNotFoundWhenRemoteReturnedBadRequest() {
         MatcherAssert.assertThat(
-            "Incorrect status, 400 is expected",
+            "Incorrect status, 404 is expected",
             new FileProxySlice(
                 new SliceSimple(new RsWithStatus(RsStatus.BAD_REQUEST)),
                 new FromRemoteCache(this.storage)
@@ -190,7 +190,7 @@ final class FileProxySliceTest {
             )
         );
         MatcherAssert.assertThat(
-            "Cache storage should be empty",
+            "Cache storage is not empty",
             this.storage.list(Key.ROOT).join().isEmpty(),
             new IsEqual<>(true)
         );
