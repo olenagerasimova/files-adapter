@@ -122,9 +122,8 @@ final class FileProxySliceITCase {
 
     @Test
     void savesDataInCache() throws URISyntaxException {
-        final byte[] data = "any".getBytes(StandardCharsets.UTF_8);
-        new BlockingStorage(this.storage)
-            .save(new Key.From("foo/any"), data);
+        final byte[] data = "xyz098".getBytes(StandardCharsets.UTF_8);
+        new BlockingStorage(this.storage).save(new Key.From("foo/any"), data);
         final Storage cache = new InMemoryStorage();
         MatcherAssert.assertThat(
             "Does not return content from proxy",
